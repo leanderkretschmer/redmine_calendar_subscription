@@ -7,7 +7,7 @@ class CalendarSubscriptionAdminController < ApplicationController
   end
 
   def users
-    term = params[:name].to_s.strip
+    term = (params[:name].presence || params[:q].presence || params[:term].presence || '').to_s.strip
     scope = User.active.order(:login)
     scope = scope.where("LOWER(login) LIKE :q OR LOWER(firstname) LIKE :q OR LOWER(lastname) LIKE :q OR LOWER(mail) LIKE :q", q: "%#{term.downcase}%") if term.present?
     render json: scope.limit(50).select(:id, :login, :firstname, :lastname, :mail).map { |u| { id: u.id, login: u.login, name: u.name, mail: u.mail } }

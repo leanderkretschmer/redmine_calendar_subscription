@@ -74,8 +74,9 @@
         if(items.length === 0){ $suggest.hide(); return; }
         $suggest.empty();
         $.each(items, function(_, u){
-          var row = $('<div style="padding:4px; cursor:pointer;"></div>');
-          row.text(u.name + ' ('+ u.login +')');
+          var row = $('<div style="padding:6px 8px; cursor:pointer; border-bottom:1px solid #eee;"></div>');
+          var label = u.name + ' ('+ u.login +')' + (u.mail ? ' — ' + u.mail : '');
+          row.text(label);
           row.on('mouseenter', function(){ $(this).css('background','#f0f0f0'); });
           row.on('mouseleave', function(){ $(this).css('background','transparent'); });
           row.on('click', function(){ addUser(u); $input.val(''); $suggest.hide(); });
