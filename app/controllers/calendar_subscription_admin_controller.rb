@@ -3,11 +3,14 @@ class CalendarSubscriptionAdminController < ApplicationController
   layout 'admin'
   before_action :require_admin
 
+  def index
+  end
+
   def users
     term = params[:name].to_s.strip
     scope = User.active.order(:login)
     scope = scope.where("LOWER(login) LIKE :q OR LOWER(firstname) LIKE :q OR LOWER(lastname) LIKE :q OR LOWER(mail) LIKE :q", q: "%#{term.downcase}%") if term.present?
-    render json: scope.limit(50).select(:id, :login, :firstname, :lastname).map { |u| { id: u.id, login: u.login, name: u.name } }
+    render json: scope.limit(50).select(:id, :login, :firstname, :lastname, :mail).map { |u| { id: u.id, login: u.login, name: u.name, mail: u.mail } }
   end
 
   def credentials_index
@@ -41,6 +44,47 @@ class CalendarSubscriptionAdminController < ApplicationController
     cred = CalendarSubscriptionCredential.find_by(user_id: params[:user_id].to_i)
     cred&.destroy
     render json: { ok: true }
+  end
+
+  def allowed_index
+    settings = Setting.plugin_redmine_calendar_subscription || {}
+    allowed_ids = Array(settings[:allowed_user_ids]).map(&:to_i)
+    users = User.where(id: allowed_ids).map { |u| { id: u.id, name: u.name, login: u.login, mail: u.mail } }
+    render json: users
+  end
+
+  def allowed_add
+    user_id = params.require(:user_id).to_i
+    settings = Setting.plugin_redmine_calendar_subscription || {}
+    allowed = Array(settings[:allowed_user_ids]).map(&:to_i)
+    unless allowed.include?(user_id)
+      allowed << user_id
+      settings[:allowed_user_ids] = allowed
+      Setting.plugin_redmine_calendar_subscription = settings
+    end
+    render json: { ok: true }
+  end
+
+  def allowed_remove
+    user_id = params.require(:user_id).to_i
+    settings = Setting.plugin_redmine_calendar_subscription || {}
+    allowed = Array(settings[:allowed_user_ids]).map(&:to_i)
+    allowed.delete(user_id)
+    settings[:allowed_user_ids] = allowed
+    Setting.plugin_redmine_calendar_subscription = settings
+    render json: { ok: true }
+  end
+
+  def user_details
+    user = User.find(params[:user_id])
+    cred = CalendarSubscriptionCredential.find_by(user_id: user.id)
+    ics_url_rss = url_for(controller: 'calendar_subscription', action: 'show', only_path: false, key: user.rss_key, format: 'ics')
+    ics_url_basic = url_for(controller: 'calendar_subscription', action: 'show', only_path: false, format: 'ics')
+    render json: {
+      user: { id: user.id, name: user.name, login: user.login, mail: user.mail },
+      credential: cred ? { username: cred.username, use_redmine_credentials: cred.use_redmine_credentials } : nil,
+      links: { ics_rss: ics_url_rss, ics_basic: ics_url_basic }
+    }
   end
 end
 

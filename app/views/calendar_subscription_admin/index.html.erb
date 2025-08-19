@@ -1,0 +1,126 @@
+<div class="contextual">
+  <%= link_to l(:label_administration), {:controller => 'admin', :action => 'index'} %>
+  | <%= link_to l(:button_configure), {:controller => 'settings', :action => 'plugin', :id => 'redmine_calendar_subscription'} %>
+  | <strong>Calendar Subscription Admin</strong>
+</div>
+
+<h2>Kalender-Abos verwalten</h2>
+
+<div style="display:flex; gap:24px; align-items:flex-start;">
+  <div style="flex:1;">
+    <h3>Freigegebene Nutzer</h3>
+    <div id="allowed-list"></div>
+    <hr/>
+    <h3>Nutzer hinzufügen</h3>
+    <input id="search" type="text" placeholder="Suche nach Nutzer, Login oder E-Mail" style="width:100%" />
+    <div id="search-results" style="border:1px solid #ddd; display:none; max-height:240px; overflow:auto; background:#fff;"></div>
+  </div>
+  <div style="flex:1;">
+    <h3>Details</h3>
+    <div id="details" style="display:none;">
+      <div><strong id="d-name"></strong> (<span id="d-login"></span>) — <span id="d-mail"></span></div>
+      <div style="margin-top:8px;">
+        <label><input type="radio" name="auth_mode" value="redmine" /> Redmine-Anmeldedaten verwenden</label><br/>
+        <label><input type="radio" name="auth_mode" value="custom" /> Eigenen Kalender-Benutzernamen/Passwort setzen</label>
+      </div>
+      <div id="custom-cred" style="display:none; margin-top:8px;">
+        <label>Benutzername: <input id="cred-username" type="text" /></label>
+        <label style="margin-left:8px;">Passwort: <input id="cred-password" type="password" /></label>
+        <button id="cred-save" class="icon icon-save">Speichern</button>
+      </div>
+      <div style="margin-top:12px;">
+        <div>.ics (RSS-Key): <a id="link-rss" target="_blank">Link</a></div>
+        <div>.ics (Login): <a id="link-basic" target="_blank">Link</a></div>
+      </div>
+      <div style="margin-top:12px;">
+        <button id="remove-user" class="icon icon-del">Zugriff entfernen</button>
+      </div>
+    </div>
+    <div id="no-details">Bitte einen Nutzer aus der Liste auswählen.</div>
+  </div>
+</div>
+
+<% content_for :header_tags do %>
+<%= javascript_tag do %>
+$(function(){
+  function loadAllowed(){
+    $.getJSON('/calendar_subscription/admin/allowed', function(list){
+      var $c = $('#allowed-list').empty();
+      if(list.length === 0){ $c.text('Keine Nutzer freigegeben.'); return; }
+      $.each(list, function(_, u){
+        var row = $('<div class="allowed-row" style="padding:4px; border-bottom:1px solid #eee; cursor:pointer;"></div>');
+        row.text(u.name + ' ('+u.login+')');
+        row.data('user-id', u.id);
+        $c.append(row);
+      });
+    });
+  }
+  function showDetails(userId){
+    $.getJSON('/calendar_subscription/admin/user/'+userId, function(data){
+      $('#details').show(); $('#no-details').hide();
+      $('#d-name').text(data.user.name);
+      $('#d-login').text(data.user.login);
+      $('#d-mail').text(data.user.mail || '');
+      $('#link-rss').attr('href', data.links.ics_rss);
+      $('#link-basic').attr('href', data.links.ics_basic);
+      if(data.credential && data.credential.use_redmine_credentials){
+        $("input[name='auth_mode'][value='redmine']").prop('checked', true);
+        $('#custom-cred').hide();
+      } else if(data.credential){
+        $("input[name='auth_mode'][value='custom']").prop('checked', true);
+        $('#custom-cred').show();
+        $('#cred-username').val(data.credential.username || '');
+      } else {
+        $("input[name='auth_mode'][value='redmine']").prop('checked', true);
+        $('#custom-cred').hide();
+        $('#cred-username').val('');
+      }
+      $('#cred-save').data('user-id', data.user.id);
+      $('#remove-user').data('user-id', data.user.id);
+      $("input[name='auth_mode']").off('change').on('change', function(){
+        var v = $(this).val();
+        if(v === 'custom'){ $('#custom-cred').show(); } else { $('#custom-cred').hide(); saveAuthMode(userId, true); }
+      });
+    });
+  }
+  function saveAuthMode(userId, useRedmine){
+    $.post('/calendar_subscription/admin/credentials', { user_id: userId, use_redmine_credentials: useRedmine, username: '', password: '' });
+  }
+  $('#allowed-list').on('click', '.allowed-row', function(){ showDetails($(this).data('user-id')); });
+  $('#cred-save').on('click', function(){
+    var userId = $(this).data('user-id');
+    var username = $('#cred-username').val();
+    var password = $('#cred-password').val();
+    $.post('/calendar_subscription/admin/credentials', { user_id: userId, use_redmine_credentials: false, username: username, password: password }, function(){
+      alert('Gespeichert');
+    });
+  });
+  $('#remove-user').on('click', function(){
+    var userId = $(this).data('user-id');
+    $.ajax({ url: '/calendar_subscription/admin/allowed/'+userId, method: 'DELETE', success: function(){ loadAllowed(); $('#details').hide(); $('#no-details').show(); }});
+  });
+  $('#search').on('keyup', function(){
+    var term = $.trim($(this).val());
+    if(term.length < 2){ $('#search-results').hide(); return; }
+    $.getJSON('/calendar_subscription/admin/users', { name: term }, function(items){
+      var $s = $('#search-results').empty();
+      $.each(items, function(_, u){
+        var r = $('<div style="padding:4px; cursor:pointer;"></div>');
+        r.text(u.name + ' ('+u.login+') '+ (u.mail||''));
+        r.on('click', function(){
+          $.post('/calendar_subscription/admin/allowed', { user_id: u.id }, function(){ loadAllowed(); $('#search-results').hide(); $('#search').val(''); });
+        });
+        r.on('mouseenter', function(){ $(this).css('background','#f0f0f0'); });
+        r.on('mouseleave', function(){ $(this).css('background','transparent'); });
+        $s.append(r);
+      });
+      $s.show();
+    });
+  });
+
+  loadAllowed();
+});
+<% end %>
+<% end %>
+
+
