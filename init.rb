@@ -4,7 +4,7 @@ Redmine::Plugin.register :redmine_calendar_subscription do
   name 'Redmine Calendar Subscription'
   author 'Leander Kretschmer'
   description 'Synchronisiere die Kalender-Abos von Redmine mit Allen Clients'
-  version '0.4.0'
+  version '0.4.1'
   url 'https://github.com/leanderkretschmer/redmine_calendar_subscription/tree/master'
   author_url 'https://github.com/leanderkretschmer'
   requires_redmine version_or_higher: '6.0.0'
@@ -23,4 +23,6 @@ Redmine::Plugin.register :redmine_calendar_subscription do
   end
 end
 
-require 'redmine_calendar_subscription'
+# Ensure plugin lib is on the load path and require main file
+$LOAD_PATH.unshift(File.expand_path('lib', __dir__)) unless $LOAD_PATH.include?(File.expand_path('lib', __dir__))
+require File.expand_path('lib/redmine_calendar_subscription', __dir__)
