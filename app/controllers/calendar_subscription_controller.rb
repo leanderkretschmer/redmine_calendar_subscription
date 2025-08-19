@@ -3,8 +3,7 @@ Time::DATE_FORMATS[:ical] = "%Y%m%dT%H%M00Z"
 class CalendarSubscriptionController < ApplicationController
 
   before_action :find_optional_project
-
-  accept_rss_auth :show
+  
 
   include QueriesHelper
   include SortHelper

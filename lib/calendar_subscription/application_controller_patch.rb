@@ -9,7 +9,7 @@ module CalendarSubscription
       result = super
       return result if result
       if params[:format] == 'ics' && request.get?
-        if params[:key] && accept_rss_auth?
+        if params[:key]
           return User.find_by_rss_key(params[:key])
         end
         user = nil
