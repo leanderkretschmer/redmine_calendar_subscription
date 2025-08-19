@@ -2,32 +2,13 @@ require_dependency 'issue'
 require_dependency 'issues_helper'
 require_dependency 'journal_detail'
 
-class DateTimeValidator < ActiveModel::EachValidator
-  def validate_each(record, attribute, value)
-    before_type_cast = record.attributes_before_type_cast[attribute.to_s]
-    if before_type_cast.is_a?(String) && before_type_cast.present?
-      # TODO: #*_date_before_type_cast returns a Mysql::Time with ruby1.8+mysql gem
-      unless before_type_cast =~ /\A\d{4}-\d{2}-\d{2}( \d{2}:\d{2}(:\d{2})?( [+-]?\d{2}:?\d{2})?)?\z/ && value
-        record.errors.add attribute, :not_a_date
-      end
-    end
-  end
-end
-
 module CalendarSubscription
   # Issue validates due_date as date_time
   module IssuePatch
     extend ActiveSupport::Concern
 
     included do
-      
-      # remove validates :due_date, :date => true
-      _validators.reject!{ |key, _| key == :due_date }
-      _validate_callbacks.reject! do |callback|
-        callback.raw_filter.is_a?(DateValidator) && callback.raw_filter.attributes == [:due_date]
-      end
-
-      validates :due_date, :date_time => true
+      # No-op on Rails 7/Redmine 6 to avoid interfering with core validations.
     end
   end
 

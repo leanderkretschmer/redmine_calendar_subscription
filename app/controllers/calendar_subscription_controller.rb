@@ -39,24 +39,24 @@ class CalendarSubscriptionController < ApplicationController
 
   def issue_to_event(issue)
     event = Icalendar::Event.new
-    # Custom fields
-    start_cf = issue.custom_value_for('Anfang')
-    end_cf   = issue.custom_value_for('Ende')
+    # Custom fields by name
+    start_cf_time = custom_field_time_value(issue, 'Anfang')
+    end_cf_time   = custom_field_time_value(issue, 'Ende')
     settings = Setting.plugin_redmine_calendar_subscription || {}
     use_estimated = ActiveModel::Type::Boolean.new.cast(settings[:use_estimated_hours])
     default_minutes = settings[:default_duration_minutes].to_i
     default_minutes = 60 if default_minutes <= 0
 
-    if start_cf.present?
-      start_time = Time.zone.parse(start_cf.value) rescue issue.due_date - 1.hour
+    if start_cf_time
+      start_time = start_cf_time
     elsif use_estimated && issue.estimated_hours.to_f > 0
       start_time = issue.due_date - issue.estimated_hours.hours
     else
       start_time = issue.due_date - default_minutes.minutes
     end
 
-    if end_cf.present?
-      end_time = Time.zone.parse(end_cf.value) rescue issue.due_date
+    if end_cf_time
+      end_time = end_cf_time
     else
       end_time = issue.due_date
     end
@@ -74,6 +74,23 @@ class CalendarSubscriptionController < ApplicationController
     event.last_modified = Icalendar::Values::DateTime.new(issue.updated_on.utc) unless issue.updated_on.nil?
     event.transp = 'TRANSPARENT'
     event
+  end
+
+  def custom_field_time_value(issue, name)
+    cf = issue_custom_field_by_name(name)
+    return nil unless cf
+    cv = issue.custom_value_for(cf)
+    return nil unless cv && cv.value.present?
+    Time.zone.parse(cv.value)
+  rescue
+    nil
+  end
+
+  def issue_custom_field_by_name(name)
+    @issue_cf_cache ||= {}
+    return @issue_cf_cache[name] if @issue_cf_cache.key?(name)
+    cf = IssueCustomField.find_by(name: name)
+    @issue_cf_cache[name] = cf
   end
 
   def ics_priority(priority)
