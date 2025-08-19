@@ -5,7 +5,6 @@ module CalendarSubscription
     extend ActiveSupport::Concern
 
     included do
-      unloadable
       unless method_defined?(:calendar_for_without_time)
         alias_method :calendar_for_without_time, :calendar_for
       end

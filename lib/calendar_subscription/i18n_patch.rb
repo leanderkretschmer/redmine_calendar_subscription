@@ -5,7 +5,6 @@ module CalendarSubscription
     extend ActiveSupport::Concern
 
     included do
-      unloadable
 			unless method_defined?(:format_date_without_time_support)
 				alias_method :format_date_without_time_support, :format_date
 			end

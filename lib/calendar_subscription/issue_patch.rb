@@ -20,7 +20,6 @@ module CalendarSubscription
     extend ActiveSupport::Concern
 
     included do
-      unloadable
       
       # remove validates :due_date, :date => true
       _validators.reject!{ |key, _| key == :due_date }
@@ -37,7 +36,6 @@ module CalendarSubscription
     extend ActiveSupport::Concern
 
     included do
-      unloadable
       unless method_defined?(:show_detail_without_due_date_time)
         alias_method :show_detail_without_due_date_time, :show_detail
       end
@@ -82,7 +80,6 @@ module CalendarSubscription
     extend ActiveSupport::Concern
 
     included do
-      unloadable
       unless method_defined?(:normalize_without_time)
         alias_method :normalize_without_time, :normalize
       end

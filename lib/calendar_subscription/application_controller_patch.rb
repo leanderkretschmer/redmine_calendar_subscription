@@ -4,7 +4,7 @@ module CalendarSubscription
   module ApplicationControllerPatch
     extend ActiveSupport::Concern
 
-    # enable rss key auth also for ics format
+    # enable rss key or HTTP Basic auth also for ics format
     def find_current_user
       result = super
       return result if result
