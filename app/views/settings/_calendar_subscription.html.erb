@@ -15,19 +15,39 @@
 <p>
   <%= label_tag 'settings[default_duration_minutes]', l(:calender_subscription_settings_default_duration_label) %>
   <%= text_field_tag 'settings[default_duration_minutes]', @settings[:default_duration_minutes], :size => 4 %>
-  <label>
+  <br/>
+  <label style="display:inline-block; margin-top:6px;">
     <%= check_box_tag 'settings[use_estimated_hours]', '1', @settings[:use_estimated_hours] %>
     <%= l(:calender_subscription_settings_use_estimated_hours_label) %>
   </label>
-  <span class="info"><%= l(:calender_subscription_settings_use_estimated_hours_hint) %></span>
-.</p>
+  <div class="info" style="color:#666; margin-top:4px;">
+    <%= l(:calender_subscription_settings_use_estimated_hours_hint) %>
+  </div>
+</p>
 <hr/>
-<p>
+<p style="max-width: 720px;">
   <%= label_tag 'settings[allowed_user_ids][]', l(:calender_subscription_settings_allowed_users_label) %><br/>
   <%= hidden_field_tag 'settings[allowed_user_ids][]', '' %>
-  <%= text_field_tag 'user_picker', '', placeholder: l(:calender_subscription_settings_user_search_placeholder), data: { url: '/calendar_subscription/admin/users' }, size: 40 %>
-  <div id="user-suggest" style="border:1px solid #ddd; display:none; max-height:200px; overflow:auto; position:relative; z-index:10; background:#fff;"></div>
-  <div id="allowed-users-list" style="margin-top:6px;"></div>
+  <div style="position: relative; max-width: 420px;">
+    <%= text_field_tag 'user_picker', '', placeholder: l(:calender_subscription_settings_user_search_placeholder), data: { url: '/calendar_subscription/admin/users' }, size: 40, style: 'width:100%;' %>
+    <div id="user-suggest" style="border:1px solid #ddd; display:none; max-height:200px; overflow:auto; position:absolute; top:100%; left:0; right:0; z-index:1000; background:#fff;"></div>
+  </div>
+  <div id="allowed-users-list" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+    <% Array(@settings[:allowed_user_ids]).each do |uid| %>
+      <% user = User.find_by_id(uid) %>
+      <% if user %>
+        <div class="user-pill" style="display:inline-flex; align-items:center; gap:6px; border:1px solid #ddd; border-radius:12px; padding:4px 8px; background:#f9f9f9;">
+          <%= hidden_field_tag 'settings[allowed_user_ids][]', user.id %>
+          <span><%= h(user.name) %> (<%= h(user.login) %>)</span>
+          <a href="#" class="edit-cred" data-user-id="<%= user.id %>" title="Zugangsdaten bearbeiten">⚙</a>
+          <a href="#" class="remove-user" data-user-id="<%= user.id %>" title="Entfernen">×</a>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+  <div style="margin-top:8px;">
+    <%= link_to 'Erweiterte Verwaltung (Liste, Zugangsdaten & .ics-Links)', '/calendar_subscription/admin', class: 'icon icon-settings' %>
+  </div>
 </p>
 
 <% content_for :header_tags do %>

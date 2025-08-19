@@ -4,7 +4,7 @@ Redmine::Plugin.register :redmine_calendar_subscription do
   name 'Redmine Calendar Subscription'
   author 'Leander Kretschmer'
   description 'Synchronisiere die Kalender-Abos von Redmine mit Allen Clients'
-  version '0.4.7'
+  version '0.4.8'
   url 'https://github.com/leanderkretschmer/redmine_calendar_subscription/tree/master'
   author_url 'https://github.com/leanderkretschmer'
   requires_redmine version_or_higher: '6.0.0'
