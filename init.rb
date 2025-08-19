@@ -4,7 +4,7 @@ Redmine::Plugin.register :redmine_calendar_subscription do
   name 'Redmine Calendar Subscription'
   author 'Leander Kretschmer'
   description 'Synchronisiere die Kalender-Abos von Redmine mit Allen Clients'
-  version '0.4.4'
+  version '0.4.5'
   url 'https://github.com/leanderkretschmer/redmine_calendar_subscription/tree/master'
   author_url 'https://github.com/leanderkretschmer'
   requires_redmine version_or_higher: '6.0.0'
@@ -13,7 +13,9 @@ Redmine::Plugin.register :redmine_calendar_subscription do
     :past_days => '30',
     :future_days => '90',
     :maximum_issues => '1000',
-    :allowed_user_ids => []
+    :allowed_user_ids => [],
+    :use_estimated_hours => false,
+    :default_duration_minutes => 60
   }, :partial => 'settings/calendar_subscription'
 
   Redmine::AccessControl.map do |map|

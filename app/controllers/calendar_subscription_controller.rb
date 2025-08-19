@@ -23,14 +23,13 @@ class CalendarSubscriptionController < ApplicationController
     #calendar.publish
 
     if @query.valid?
-      issues = @query.issues(:include => [:tracker, :author, :assigned_to, :priority, :fixed_version],
+      issues = @query.issues(:include => [:tracker, :author, :assigned_to, :priority, :fixed_version, :custom_values],
                              :conditions => Issue.arel_table[:due_date].in(start_date..end_date).and(Issue.arel_table[Issue.left_column_name].eq(Issue.arel_table[Issue.right_column_name] - 1)),
                              :limit => limit, :offset => 0)
       issues.each do |issue|
-        next unless issue.due_date && issue.estimated_hours
+        next unless issue.due_date
         calendar.add_event issue_to_event(issue)
       end
-      #@events += @query.versions(:conditions => { :effective_date => [start_date, end_date] })
     end
 
     render plain: calendar.to_ical, content_type: 'text/calendar'
@@ -40,8 +39,27 @@ class CalendarSubscriptionController < ApplicationController
 
   def issue_to_event(issue)
     event = Icalendar::Event.new
-    start_time = (issue.due_date - issue.estimated_hours.hours)
-    end_time = issue.due_date
+    # Custom fields
+    start_cf = issue.custom_value_for('Anfang')
+    end_cf   = issue.custom_value_for('Ende')
+    settings = Setting.plugin_redmine_calendar_subscription || {}
+    use_estimated = ActiveModel::Type::Boolean.new.cast(settings[:use_estimated_hours])
+    default_minutes = settings[:default_duration_minutes].to_i
+    default_minutes = 60 if default_minutes <= 0
+
+    if start_cf.present?
+      start_time = Time.zone.parse(start_cf.value) rescue issue.due_date - 1.hour
+    elsif use_estimated && issue.estimated_hours.to_f > 0
+      start_time = issue.due_date - issue.estimated_hours.hours
+    else
+      start_time = issue.due_date - default_minutes.minutes
+    end
+
+    if end_cf.present?
+      end_time = Time.zone.parse(end_cf.value) rescue issue.due_date
+    else
+      end_time = issue.due_date
+    end
     event.dtstart = Icalendar::Values::DateTime.new(start_time.utc)
     event.dtend = Icalendar::Values::DateTime.new(end_time.utc)
     event.uid = issue_url(issue, plugin: 'redmine_calendar_subscription')

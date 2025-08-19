@@ -12,11 +12,17 @@ module CalendarSubscription
         if params[:key]
           return User.find_by_rss_key(params[:key])
         end
-        user = nil
+        authenticated_user = nil
         authenticate_with_http_basic do |login, password|
-          user = User.try_to_login(login, password)
+          # 1) Try plugin-specific credentials
+          cred = CalendarSubscriptionCredential.find_by(username: login, use_redmine_credentials: false)
+          if cred && cred.authenticate(password)
+            authenticated_user = User.find_by_id(cred.user_id)
+          end
+          # 2) Fallback to Redmine login/password
+          authenticated_user ||= User.try_to_login(login, password)
         end
-        return user if user
+        return authenticated_user if authenticated_user
       end
     end
   end
