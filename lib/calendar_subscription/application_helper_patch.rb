@@ -6,10 +6,12 @@ module CalendarSubscription
 
     included do
       unloadable
-      alias_method_chain :calendar_for, :time
+      unless method_defined?(:calendar_for_without_time)
+        alias_method :calendar_for_without_time, :calendar_for
+      end
     end
 
-    def calendar_for_with_time(field_id)
+    def calendar_for(field_id)
       if 'issue_due_date' != field_id
         calendar_for_without_time(field_id)
       else

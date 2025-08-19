@@ -4,22 +4,22 @@ module CalendarSubscription
   module ApplicationControllerPatch
     extend ActiveSupport::Concern
 
-    included do
-      unloadable
-      alias_method_chain :find_current_user, :ics
-    end
-
     # enable rss key auth also for ics format
-    def find_current_user_with_ics
-      result = find_current_user_without_ics
+    def find_current_user
+      result = super
       return result if result
-      if params[:format] == 'ics' && params[:key] && request.get? && accept_rss_auth?
-        User.find_by_rss_key(params[:key])
+      if params[:format] == 'ics' && request.get?
+        if params[:key] && accept_rss_auth?
+          return User.find_by_rss_key(params[:key])
+        end
+        user = nil
+        authenticate_with_http_basic do |login, password|
+          user = User.try_to_login(login, password)
+        end
+        return user if user
       end
     end
   end
 end
 
-unless ApplicationController.included_modules.include?(CalendarSubscription::ApplicationControllerPatch)
-  ApplicationController.send(:include, CalendarSubscription::ApplicationControllerPatch)
-end
+ApplicationController.prepend(CalendarSubscription::ApplicationControllerPatch)

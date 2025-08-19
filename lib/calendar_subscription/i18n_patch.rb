@@ -6,18 +6,22 @@ module CalendarSubscription
 
     included do
       unloadable
-      alias_method_chain :format_date, :time_support
-			alias_method_chain :format_time, :recursion_protection
+			unless method_defined?(:format_date_without_time_support)
+				alias_method :format_date_without_time_support, :format_date
+			end
+			unless method_defined?(:format_time_without_recursion_protection)
+				alias_method :format_time_without_recursion_protection, :format_time
+			end
 		end
 
-		def format_time_with_recursion_protection(*args)
+		def format_time(*args)
 			Thread.current[:in_format_time] = true
 			format_time_without_recursion_protection(*args)
 		ensure
 			Thread.current[:in_format_time] = nil
 		end
 
-    def format_date_with_time_support(date)
+    def format_date(date)
       return nil unless date
 			return format_time(date) if date.is_a?(Time) && !Thread.current[:in_format_time]
       format_date_without_time_support(date)

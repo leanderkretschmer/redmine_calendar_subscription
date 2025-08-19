@@ -1,5 +1,4 @@
-
-ActionDispatch::Reloader.to_prepare do
+ActiveSupport::Reloader.to_prepare do
   require_dependency 'calendar_subscription/i18n_patch'
   require_dependency 'calendar_subscription/application_helper_patch'
   require_dependency 'calendar_subscription/application_controller_patch'

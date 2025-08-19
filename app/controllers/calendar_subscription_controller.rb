@@ -2,7 +2,7 @@ Time::DATE_FORMATS[:ical] = "%Y%m%dT%H%M00Z"
 
 class CalendarSubscriptionController < ApplicationController
 
-  before_filter :find_optional_project
+  before_action :find_optional_project
 
   accept_rss_auth :show
 
@@ -10,6 +10,9 @@ class CalendarSubscriptionController < ApplicationController
   include SortHelper
 
   def show
+    unless allowed_to_subscribe?(User.current)
+      render plain: 'Forbidden', status: :forbidden and return
+    end
     start_date = Date.today - Setting.plugin_redmine_calendar_subscription[:past_days].to_i.days
     end_date = Date.today + Setting.plugin_redmine_calendar_subscription[:future_days].to_i.days
     limit = Setting.plugin_redmine_calendar_subscription[:maximum_issues].to_i
@@ -31,39 +34,28 @@ class CalendarSubscriptionController < ApplicationController
       #@events += @query.versions(:conditions => { :effective_date => [start_date, end_date] })
     end
 
-    render :text => calendar.to_ical, :content_type => :ics
+    render plain: calendar.to_ical, content_type: 'text/calendar'
   end
 
   private
 
   def issue_to_event(issue)
     event = Icalendar::Event.new
-    event.tzid = 'UTC'
-    event.klass = 'CONFIDENTIAL' # TODO: Check for public (no login) project
-    event.start (issue.due_date - issue.estimated_hours.hours).to_s(:ical)
-    event.end issue.due_date.to_s(:ical)
+    start_time = (issue.due_date - issue.estimated_hours.hours)
+    end_time = issue.due_date
+    event.dtstart = Icalendar::Values::DateTime.new(start_time.utc)
+    event.dtend = Icalendar::Values::DateTime.new(end_time.utc)
     event.uid = issue_url(issue, plugin: 'redmine_calendar_subscription')
     event.url = issue_url(issue)
-
     event.summary = "[#{issue.project.name}] #{issue.tracker.name}: #{issue.subject} (##{issue.id})"
     event.description = issue.description unless issue.description.blank?
     event.priority = ics_priority issue.priority
     event.sequence = issue.lock_version
-    if issue.fixed_version.nil?
-      event.add_category issue.project.name
-    else
-      event.add_category "#{issue.project.name} - #{issue.fixed_version.name}"
-    end
-
-    event.created = issue.created_on.to_s(:ical)
-    event.last_modified = issue.updated_on.to_s(:ical) unless issue.updated_on.nil?
-    event.add_contact issue.assigned_to.name, {'ALTREP' => issue.assigned_to.mail} unless issue.assigned_to.nil?
-
-    event.organizer "mailto:#{issue.author.mail}", {'CN' => issue.author.name}
-
-    event.status = issue.assigned_to ? 'CONFIRMED' : 'TENTATIVE' unless issue.closed?
+    category = issue.fixed_version.nil? ? issue.project.name : "#{issue.project.name} - #{issue.fixed_version.name}"
+    event.append_custom_property('CATEGORIES', category)
+    event.created = Icalendar::Values::DateTime.new(issue.created_on.utc)
+    event.last_modified = Icalendar::Values::DateTime.new(issue.updated_on.utc) unless issue.updated_on.nil?
     event.transp = 'TRANSPARENT'
-
     event
   end
 
@@ -99,5 +91,12 @@ class CalendarSubscriptionController < ApplicationController
           end
           map
         end
+  end
+
+  def allowed_to_subscribe?(user)
+    settings = Setting.plugin_redmine_calendar_subscription || {}
+    allowed_ids = Array(settings[:allowed_user_ids]).map(&:to_i)
+    return true if allowed_ids.empty?
+    allowed_ids.include?(user.id)
   end
 end

@@ -38,10 +38,12 @@ module CalendarSubscription
 
     included do
       unloadable
-      alias_method_chain :show_detail, :due_date_time
+      unless method_defined?(:show_detail_without_due_date_time)
+        alias_method :show_detail_without_due_date_time, :show_detail
+      end
     end
 
-    def show_detail_with_due_date_time(detail, no_html=false, options={})
+    def show_detail(detail, no_html=false, options={})
       if detail.property == 'attr' && detail.prop_key == 'due_date'
         field = detail.prop_key.to_s.gsub(/\_id$/, "")
         label = l(("field_" + field).to_sym)
@@ -81,10 +83,12 @@ module CalendarSubscription
 
     included do
       unloadable
-      alias_method_chain :normalize, :time
+      unless method_defined?(:normalize_without_time)
+        alias_method :normalize_without_time, :normalize
+      end
     end
 
-    def normalize_with_time(v)
+    def normalize(v)
       case v
         when Time
           v.strftime('%F %T')

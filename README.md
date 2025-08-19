@@ -1,15 +1,16 @@
-# Redmine Calendar Subscription Plugin
+# Redmine Calendar Subscription Plugin (Redmine 6)
 
-'Calendar Subscription' is a Redmine plugin that helps you keep an overview over the planned issues.
+'Calendar Subscription' is a Redmine plugin that helps you keep an overview over planned issues.
 
-It enhances the planning capabilities of Redmine to times and provides ICS calendar subscriptions for projects, filters or the entire Redmine installation.
+It enhances the planning capabilities of Redmine with times and provides ICS calendar subscriptions for projects, filters or the entire Redmine installation.
 
 ## Features
 
-* working iCalender (ICS) subscriptions of planned tickets
-* RSS-key based authentication
+* Working iCalendar (ICS) subscriptions of planned tickets
+* RSS-key based authentication and optional login-based access
 * due date is enhanced with planned finish time
 * start time is calculated from planned finish time and estimated hours
+* Admin setting to restrict who is allowed to subscribe (user picker)
 
 ## Getting the plugin
 
@@ -17,13 +18,13 @@ Most current version is available at: [GitHub](https://github.com/hicknhack-soft
 
 ## Requirements
 
-* Redmine 2.4.x
+* Redmine 6.x
 
 ## Install
 
-1. Follow the Redmine plugin installation steps at http://www.redmine.org/wiki/redmine/Plugins. Make sure the plugin is installed to `#{RAILS_ROOT}/plugins/redmine_calendar_subscription`
-1. Rerun `bundle install` to install all necessarry gems
-1. Setup the database using the migrations: `rake redmine:plugins:migrate RAILS_ENV=production`
+1. Follow the Redmine plugin installation steps at `https://www.redmine.org/wiki/redmine/Plugins`. Install to `plugins/redmine_calendar_subscription`
+1. Run `bundle install`
+1. (If upgrading from older versions) Run migrations: `bundle exec rake redmine:plugins:migrate RAILS_ENV=production`
 1. Log into your Redmine as an Administrator
 1. Setup the 'subscribe calendar' permissions for your roles
 1. Add 'Calendar Subscription' to the enabled modules for your project
@@ -33,7 +34,7 @@ Most current version is available at: [GitHub](https://github.com/hicknhack-soft
 
 1. Open a shell to your Redmine's `#{RAILS_ROOT}/plugins/redmine_calendar_subscription` folder
 1. Update your git copy with `git pull`
-1. Update the database using the migrations: `redmine:plugins:migrate RAILS_ENV=production`
+1. Update the database using the migrations: `bundle exec rake redmine:plugins:migrate RAILS_ENV=production`
 1. Restart your Redmine
 
 ## Usage
@@ -43,6 +44,7 @@ Permissions required to perform a calendar subscriptions:
 * view the tickets
 * the project has the 'Calendar Subscription'-module
 * 'subscribe_calendar' permission for the current user
+* User must be allowed in plugin settings if a restriction list is configured
 
 If the right permissions are provided, you get access to these calendar subscriptions:
 
@@ -53,12 +55,21 @@ If the right permissions are provided, you get access to these calendar subscrip
 You can take these links and subscribe to them.
 See http://mcb.berkeley.edu/academic-programs/seminars/ical-feed-instructions/ for a good instruction set.
 
-###Settings
+### Settings
 
-The plugin offers a list of settings at the Redmine roles and permission settings page.
+Go to `Administration -> Plugins -> Redmine Calendar Subscription -> Configure`.
+
+Settings:
+* past_days / future_days / maximum_issues
+* allowed users: Pick specific users who are allowed to subscribe. If empty, everyone with permission can subscribe.
+
+Subscription options displayed:
+* iCal with RSS key: Anonymously accessible using the user's RSS key
+* iCal (Login): Requires Redmine login in the client and uses the user's Redmine credentials
 
 ## Version History
 
+* 0.4.0 Redmine 6 compatibility, iCalendar 2.x, admin user restrictions, login-based subscription link
 * 0.3.1 only issues that do not have children are considered
 * 0.3.0 improved compatibility with other plugins
 * 0.2.0 improved due_date with time usability with the timepicker plugin
