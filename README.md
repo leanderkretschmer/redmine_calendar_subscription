@@ -1,6 +1,3 @@
-[![Dependency Status](https://gemnasium.com/hicknhack-software/redmine_calendar_subscription.png)](https://gemnasium.com/hicknhack-software/redmine_calendar_subscription)
-[![Code Climate](https://codeclimate.com/github/hicknhack-software/redmine_calendar_subscription.png)](https://codeclimate.com/github/hicknhack-software/redmine_calendar_subscription)
-
 # Redmine Calendar Subscription Plugin
 
 'Calendar Subscription' is a Redmine plugin that helps you keep an overview over the planned issues.
