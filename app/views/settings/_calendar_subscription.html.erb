@@ -25,8 +25,8 @@
   </div>
 </p>
 <hr/>
-<div style="display:flex; gap:16px; align-items:flex-start;">
-  <div style="flex:1; min-width:320px;">
+<div style="display:flex; gap:16px; align-items:flex-start; flex-wrap: wrap;">
+  <div style="flex:1; min-width:300px; max-width: 400px;">
     <%= label_tag 'settings[allowed_user_ids][]', l(:calender_subscription_settings_allowed_users_label) %><br/>
     <%= hidden_field_tag 'settings[allowed_user_ids][]', '' %>
     <div style="position: relative;">
@@ -37,8 +37,8 @@
       <a href="#" id="open-add-user" class="icon icon-add" style="color:#268bd2;">Nutzer hinzufügen</a>
     </div>
     <div id="add-user-panel" style="margin-top:8px; display:none; border:1px solid #ddd; padding:8px; background:#fafafa;">
-      <div style="display:flex; gap:8px; align-items:center;">
-        <input id="adv-user-input" type="text" style="flex:1;" placeholder="Nutzer suchen..." />
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap: wrap;">
+        <input id="adv-user-input" type="text" style="flex:1; min-width: 150px;" placeholder="Nutzer suchen..." />
         <select id="adv-user-field">
           <option value="name">Anzeigename</option>
           <option value="login">Benutzername</option>
@@ -48,48 +48,71 @@
         </select>
       </div>
       <div id="adv-user-results" style="margin-top:8px; border:1px solid #eee; max-height:260px; overflow:auto; background:#fff;"></div>
-      <div id="adv-user-pager" style="margin-top:6px; display:flex; gap:8px; align-items:center;">
+      <div id="adv-user-pager" style="margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap: wrap;">
         <button id="adv-prev" class="button">Zurück</button>
         <span id="adv-page"></span>
         <button id="adv-next" class="button">Weiter</button>
       </div>
     </div>
   </div>
-  <div style="flex:1; min-width:420px;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <strong>Erlaubte Nutzer</strong>
-      <input id="allowed-filter" type="text" placeholder="Liste filtern..." style="width:220px;" />
+  <div style="flex:2; min-width:500px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 8px;">
+      <strong>Erlaubte Nutzer (dürfen Kalender abonnieren)</strong>
+      <input id="allowed-filter" type="text" placeholder="Liste filtern..." style="width:200px; min-width: 150px;" />
     </div>
-    <table class="list" style="margin-top:6px; width:100%;">
-      <thead>
-      <tr>
-        <th>Name</th>
-        <th>Login</th>
-        <th>E‑Mail</th>
-        <th>Aktionen</th>
-      </tr>
-      </thead>
-      <tbody id="allowed-users-table"></tbody>
-    </table>
-    <div id="user-settings" style="display:none; margin-top:12px; border:1px solid #ddd; padding:10px; background:#fafafa;">
-      <div><strong id="us-name"></strong> (<span id="us-login"></span>) — <span id="us-mail"></span></div>
-      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-        <label>Modus:
-          <select id="us-mode">
+    <div style="overflow-x: auto; margin-top: 6px;">
+      <table class="list" style="width:100%; min-width: 600px;">
+        <thead>
+        <tr>
+          <th style="min-width: 120px;">Name</th>
+          <th style="min-width: 100px;">Login</th>
+          <th style="min-width: 150px;">E‑Mail</th>
+          <th style="min-width: 120px;">Aktionen</th>
+        </tr>
+        </thead>
+        <tbody id="allowed-users-table"></tbody>
+      </table>
+    </div>
+    <div id="user-settings" style="display:none; margin-top:12px; border:1px solid #ddd; padding:12px; background:#fafafa; border-radius: 4px;">
+      <div style="margin-bottom: 12px; word-wrap: break-word;">
+        <strong id="us-name"></strong> (<span id="us-login"></span>) — <span id="us-mail"></span>
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: center;">
+        <div>
+          <label style="display: block; margin-bottom: 4px; font-weight: bold;">Modus:</label>
+          <select id="us-mode" style="width: 100%;">
             <option value="redmine">Redmine</option>
             <option value="custom">Set Credentials</option>
             <option value="none">None</option>
           </select>
-        </label>
-        <input type="text" id="us-username" placeholder="Benutzername" style="display:none;" />
-        <input type="password" id="us-password" placeholder="Passwort" style="display:none;" />
-        <label>Ablaufdatum: <input type="date" id="us-exp" /></label>
-        <label><input type="checkbox" id="us-paused" /> Pause</label>
-        <button id="us-save" class="button icon icon-save">Speichern</button>
+        </div>
+        <div id="us-username-container" style="display:none;">
+          <label style="display: block; margin-bottom: 4px; font-weight: bold;">Benutzername:</label>
+          <input type="text" id="us-username" placeholder="Benutzername" style="width: 100%;" />
+        </div>
+        <div id="us-password-container" style="display:none;">
+          <label style="display: block; margin-bottom: 4px; font-weight: bold;">Passwort:</label>
+          <input type="password" id="us-password" placeholder="Passwort" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display: block; margin-bottom: 4px; font-weight: bold;">Ablaufdatum:</label>
+          <input type="date" id="us-exp" style="width: 100%;" />
+        </div>
+        <div style="display: flex; align-items: center; margin-top: 20px;">
+          <label style="display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="us-paused" />
+            <span>Pause</span>
+          </label>
+        </div>
+        <div style="display: flex; align-items: end;">
+          <button id="us-save" class="button icon icon-save" style="width: 100%;">Speichern</button>
+        </div>
       </div>
-      <div style="margin-top:10px;">
-        <span>.ics (RSS-Key): <a id="us-link-rss" target="_blank">Link</a></span>
-        <span style="margin-left:12px;">.ics (Login): <a id="us-link-basic" target="_blank">Link</a></span>
+      <div style="margin-top:16px; padding-top: 12px; border-top: 1px solid #ddd;">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+          <span>.ics (RSS-Key): <a id="us-link-rss" target="_blank">Link</a></span>
+          <span>.ics (Login): <a id="us-link-basic" target="_blank">Link</a></span>
+        </div>
       </div>
     </div>
   </div>
@@ -102,10 +125,10 @@
       var $suggest = $('#user-suggest');
       function renderAllowedRow(u){
         var $tr = $('<tr data-user-id="'+u.id+'"></tr>');
-        $tr.append('<td class="us-name"><a href="#" class="open-settings">'+ (u.name || '') +'</a></td>');
-        $tr.append('<td class="us-login">'+ (u.login || '') +'</td>');
-        $tr.append('<td class="us-mail">'+ (u.mail || '') +'</td>');
-        $tr.append('<td><a href="#" class="open-settings icon icon-settings">Konfigurieren</a> <a href="#" class="remove-user icon icon-del">Entfernen</a></td>');
+        $tr.append('<td class="us-name" style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><a href="#" class="open-settings" title="'+ (u.name || '') +'">'+ (u.name || '') +'</a></td>');
+        $tr.append('<td class="us-login" style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="'+ (u.login || '') +'">'+ (u.login || '') +'</td>');
+        $tr.append('<td class="us-mail" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="'+ (u.mail || '') +'">'+ (u.mail || '') +'</td>');
+        $tr.append('<td style="white-space: nowrap;"><a href="#" class="open-settings icon icon-settings">Konfigurieren</a> <a href="#" class="remove-user icon icon-del">Entfernen</a></td>');
         $tr.append('<input type="hidden" name="settings[allowed_user_ids][]" value="'+u.id+'" />');
         return $tr;
       }
@@ -149,7 +172,7 @@
       });
       $('#us-mode').on('change', function(){
         var v = $(this).val();
-        if(v === 'custom'){ $('#us-username,#us-password').show(); } else { $('#us-username,#us-password').hide(); }
+        if(v === 'custom'){ $('#us-username-container,#us-password-container').show(); } else { $('#us-username-container,#us-password-container').hide(); }
       });
       $('#us-save').on('click', function(e){
         e.preventDefault();

@@ -6,8 +6,8 @@
 
 <h2>Kalender-Abos verwalten</h2>
 
-<div style="display:flex; gap:24px; align-items:flex-start;">
-  <div style="flex:1;">
+<div style="display:flex; gap:24px; align-items:flex-start; flex-wrap: wrap;">
+  <div style="flex:1; min-width: 300px;">
     <h3>Freigegebene Nutzer</h3>
     <div id="allowed-list"></div>
     <hr/>
@@ -15,24 +15,43 @@
     <input id="search" type="text" placeholder="Suche nach Nutzer, Login oder E-Mail" style="width:100%" />
     <div id="search-results" style="border:1px solid #ddd; display:none; max-height:240px; overflow:auto; background:#fff;"></div>
   </div>
-  <div style="flex:1;">
+  <div style="flex:1; min-width: 400px;">
     <h3>Details</h3>
     <div id="details" style="display:none;">
-      <div><strong id="d-name"></strong> (<span id="d-login"></span>) — <span id="d-mail"></span></div>
-      <div style="margin-top:8px;">
-        <label><input type="radio" name="auth_mode" value="redmine" /> Redmine-Anmeldedaten verwenden</label><br/>
-        <label><input type="radio" name="auth_mode" value="custom" /> Eigenen Kalender-Benutzernamen/Passwort setzen</label>
+      <div style="margin-bottom: 12px; word-wrap: break-word;">
+        <strong id="d-name"></strong> (<span id="d-login"></span>) — <span id="d-mail"></span>
       </div>
-      <div id="custom-cred" style="display:none; margin-top:8px;">
-        <label>Benutzername: <input id="cred-username" type="text" /></label>
-        <label style="margin-left:8px;">Passwort: <input id="cred-password" type="password" /></label>
-        <button id="cred-save" class="icon icon-save">Speichern</button>
+      <div style="margin-top:12px; display:grid; grid-template-columns: 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; margin-bottom: 4px; font-weight: bold;">Authentifizierung:</label>
+          <label style="display: block; margin-bottom: 8px;">
+            <input type="radio" name="auth_mode" value="redmine" /> Redmine-Anmeldedaten verwenden
+          </label>
+          <label style="display: block;">
+            <input type="radio" name="auth_mode" value="custom" /> Eigenen Kalender-Benutzernamen/Passwort setzen
+          </label>
+        </div>
+        <div id="custom-cred" style="display:none; border: 1px solid #ddd; padding: 12px; background: #f9f9f9; border-radius: 4px;">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-weight: bold;">Benutzername:</label>
+              <input id="cred-username" type="text" style="width: 100%;" />
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 4px; font-weight: bold;">Passwort:</label>
+              <input id="cred-password" type="password" style="width: 100%;" />
+            </div>
+          </div>
+          <div style="margin-top: 12px;">
+            <button id="cred-save" class="icon icon-save">Speichern</button>
+          </div>
+        </div>
       </div>
-      <div style="margin-top:12px;">
-        <div>.ics (RSS-Key): <a id="link-rss" target="_blank">Link</a></div>
-        <div>.ics (Login): <a id="link-basic" target="_blank">Link</a></div>
-      </div>
-      <div style="margin-top:12px;">
+      <div style="margin-top:16px; padding-top: 12px; border-top: 1px solid #ddd;">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+          <span>.ics (RSS-Key): <a id="link-rss" target="_blank">Link</a></span>
+          <span>.ics (Login): <a id="link-basic" target="_blank">Link</a></span>
+        </div>
         <button id="remove-user" class="icon icon-del">Zugriff entfernen</button>
       </div>
     </div>
@@ -48,8 +67,13 @@ $(function(){
       var $c = $('#allowed-list').empty();
       if(list.length === 0){ $c.text('Keine Nutzer freigegeben.'); return; }
       $.each(list, function(_, u){
-        var row = $('<div class="allowed-row" style="padding:4px; border-bottom:1px solid #eee; cursor:pointer;"></div>');
-        row.text(u.name + ' ('+u.login+')');
+        var row = $('<div class="allowed-row" style="padding:8px; border-bottom:1px solid #eee; cursor:pointer; word-wrap: break-word;"></div>');
+        var displayText = (u.name || '') + ' (' + (u.login || '') + ')';
+        if (u.mail) {
+          displayText += ' — ' + u.mail;
+        }
+        row.text(displayText);
+        row.attr('title', displayText);
         row.data('user-id', u.id);
         $c.append(row);
       });
