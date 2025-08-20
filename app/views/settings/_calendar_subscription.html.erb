@@ -25,73 +25,154 @@
   </div>
 </p>
 <hr/>
-<p style="max-width: 720px;">
-  <%= label_tag 'settings[allowed_user_ids][]', l(:calender_subscription_settings_allowed_users_label) %><br/>
-  <%= hidden_field_tag 'settings[allowed_user_ids][]', '' %>
-  <div style="position: relative; max-width: 420px;">
-    <%= text_field_tag 'user_picker', '', placeholder: l(:calender_subscription_settings_user_search_placeholder), data: { url: '/calendar_subscription/admin/users' }, size: 40, style: 'width:100%;' %>
-    <div id="user-suggest" style="border:1px solid #ddd; display:none; max-height:200px; overflow:auto; position:absolute; top:100%; left:0; right:0; z-index:1000; background:#fff;"></div>
-  </div>
-  <div id="allowed-users-list" style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
-    <% Array(@settings[:allowed_user_ids]).each do |uid| %>
-      <% user = User.find_by_id(uid) %>
-      <% if user %>
-        <div class="user-pill" style="display:inline-flex; align-items:center; gap:6px; border:1px solid #ddd; border-radius:12px; padding:4px 8px; background:#f9f9f9;">
-          <%= hidden_field_tag 'settings[allowed_user_ids][]', user.id %>
-          <span><%= h(user.name) %> (<%= h(user.login) %>)</span>
-          <a href="#" class="edit-cred" data-user-id="<%= user.id %>" title="Zugangsdaten bearbeiten">⚙</a>
-          <a href="#" class="remove-user" data-user-id="<%= user.id %>" title="Entfernen">×</a>
-        </div>
-      <% end %>
-    <% end %>
-  </div>
-  <div style="margin-top:12px;">
-    <a href="#" id="open-add-user" class="icon icon-add" style="color:#268bd2;">Nutzer hinzufügen</a>
-  </div>
-  <div id="add-user-panel" style="margin-top:8px; display:none; max-width:720px; border:1px solid #ddd; padding:8px; background:#fafafa;">
-    <div style="display:flex; gap:8px; align-items:center;">
-      <input id="adv-user-input" type="text" style="flex:1;" placeholder="Nutzer suchen..." />
-      <select id="adv-user-field">
-        <option value="name">Anzeigename</option>
-        <option value="login">Benutzername</option>
-        <option value="mail">E-Mail</option>
-        <option value="firstname">Vorname</option>
-        <option value="lastname">Nachname</option>
-      </select>
+<div style="display:flex; gap:16px; align-items:flex-start;">
+  <div style="flex:1; min-width:320px;">
+    <%= label_tag 'settings[allowed_user_ids][]', l(:calender_subscription_settings_allowed_users_label) %><br/>
+    <%= hidden_field_tag 'settings[allowed_user_ids][]', '' %>
+    <div style="position: relative;">
+      <%= text_field_tag 'user_picker', '', placeholder: l(:calender_subscription_settings_user_search_placeholder), data: { url: '/calendar_subscription/admin/users' }, size: 40, style: 'width:100%;' %>
+      <div id="user-suggest" style="border:1px solid #ddd; display:none; max-height:200px; overflow:auto; position:absolute; top:100%; left:0; right:0; z-index:1000; background:#fff;"></div>
     </div>
-    <div id="adv-user-results" style="margin-top:8px; border:1px solid #eee; max-height:260px; overflow:auto; background:#fff;"></div>
-    <div id="adv-user-pager" style="margin-top:6px; display:flex; gap:8px; align-items:center;">
-      <button id="adv-prev" class="button">Zurück</button>
-      <span id="adv-page"></span>
-      <button id="adv-next" class="button">Weiter</button>
+    <div style="margin-top:12px;">
+      <a href="#" id="open-add-user" class="icon icon-add" style="color:#268bd2;">Nutzer hinzufügen</a>
+    </div>
+    <div id="add-user-panel" style="margin-top:8px; display:none; border:1px solid #ddd; padding:8px; background:#fafafa;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input id="adv-user-input" type="text" style="flex:1;" placeholder="Nutzer suchen..." />
+        <select id="adv-user-field">
+          <option value="name">Anzeigename</option>
+          <option value="login">Benutzername</option>
+          <option value="mail">E-Mail</option>
+          <option value="firstname">Vorname</option>
+          <option value="lastname">Nachname</option>
+        </select>
+      </div>
+      <div id="adv-user-results" style="margin-top:8px; border:1px solid #eee; max-height:260px; overflow:auto; background:#fff;"></div>
+      <div id="adv-user-pager" style="margin-top:6px; display:flex; gap:8px; align-items:center;">
+        <button id="adv-prev" class="button">Zurück</button>
+        <span id="adv-page"></span>
+        <button id="adv-next" class="button">Weiter</button>
+      </div>
     </div>
   </div>
-</p>
+  <div style="flex:1; min-width:420px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <strong>Erlaubte Nutzer</strong>
+      <input id="allowed-filter" type="text" placeholder="Liste filtern..." style="width:220px;" />
+    </div>
+    <table class="list" style="margin-top:6px; width:100%;">
+      <thead>
+      <tr>
+        <th>Name</th>
+        <th>Login</th>
+        <th>E‑Mail</th>
+        <th>Aktionen</th>
+      </tr>
+      </thead>
+      <tbody id="allowed-users-table"></tbody>
+    </table>
+    <div id="user-settings" style="display:none; margin-top:12px; border:1px solid #ddd; padding:10px; background:#fafafa;">
+      <div><strong id="us-name"></strong> (<span id="us-login"></span>) — <span id="us-mail"></span></div>
+      <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <label>Modus:
+          <select id="us-mode">
+            <option value="redmine">Redmine</option>
+            <option value="custom">Set Credentials</option>
+            <option value="none">None</option>
+          </select>
+        </label>
+        <input type="text" id="us-username" placeholder="Benutzername" style="display:none;" />
+        <input type="password" id="us-password" placeholder="Passwort" style="display:none;" />
+        <label>Ablaufdatum: <input type="date" id="us-exp" /></label>
+        <label><input type="checkbox" id="us-paused" /> Pause</label>
+        <button id="us-save" class="button icon icon-save">Speichern</button>
+      </div>
+      <div style="margin-top:10px;">
+        <span>.ics (RSS-Key): <a id="us-link-rss" target="_blank">Link</a></span>
+        <span style="margin-left:12px;">.ics (Login): <a id="us-link-basic" target="_blank">Link</a></span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <% content_for :header_tags do %>
   <%= javascript_tag do %>
     $(function(){
       var $input = $('#user_picker');
       var $suggest = $('#user-suggest');
-      function addUser(user){
-        if($('#allowed-users-list input[value="'+user.id+'"]').length){ return; }
-        var pill = $('<div class="user-pill" style="display:inline-flex; align-items:center; gap:6px; border:1px solid #ddd; border-radius:12px; padding:6px 10px; background:#f9f9f9;">'
-          + '<input type="hidden" name="settings[allowed_user_ids][]" value="'+user.id+'" />'
-          + '<span></span>'
-          + '<select class="cred-mode" data-user-id="'+user.id+'" title="Authentifizierung"><option value="redmine">Redmine</option><option value="custom">Set Credentials</option><option value="none">None</option></select>'
-          + '<input type="text" class="cred-user" data-user-id="'+user.id+'" placeholder="Benutzername" style="width:120px; display:none;" />'
-          + '<input type="password" class="cred-pass" data-user-id="'+user.id+'" placeholder="Passwort" style="width:120px; display:none;" />'
-          + '<input type="date" class="cred-exp" data-user-id="'+user.id+'" title="Ablaufdatum" />'
-          + '<label style="margin:0 4px; font-size:12px;"><input type="checkbox" class="cred-paused" data-user-id="'+user.id+'" /> Pause</label>'
-          + '<a href="#" class="save-cred" data-user-id="'+user.id+'" title="Speichern">💾</a>'
-          + '<a href="#" class="remove-user" data-user-id="'+user.id+'" title="Entfernen">×</a>'
-          + '</div>');
-        pill.find('span').text(user.name + ' ('+ user.login +')');
-        $('#allowed-users-list').append(pill);
+      function renderAllowedRow(u){
+        var $tr = $('<tr data-user-id="'+u.id+'"></tr>');
+        $tr.append('<td class="us-name"><a href="#" class="open-settings">'+ (u.name || '') +'</a></td>');
+        $tr.append('<td class="us-login">'+ (u.login || '') +'</td>');
+        $tr.append('<td class="us-mail">'+ (u.mail || '') +'</td>');
+        $tr.append('<td><a href="#" class="open-settings icon icon-settings">Konfigurieren</a> <a href="#" class="remove-user icon icon-del">Entfernen</a></td>');
+        $tr.append('<input type="hidden" name="settings[allowed_user_ids][]" value="'+u.id+'" />');
+        return $tr;
       }
-      $('#allowed-users-list').on('click', '.remove-user', function(e){
+      function addUser(u){
+        if($('#allowed-users-table tr[data-user-id="'+u.id+'"]').length){ return; }
+        // persist immediately
+        $.post('/calendar_subscription/admin/allowed', { user_id: u.id });
+        $('#allowed-users-table').append(renderAllowedRow(u));
+      }
+      function loadAllowed(){
+        $.getJSON('/calendar_subscription/admin/allowed', function(list){
+          var $t = $('#allowed-users-table').empty();
+          $.each(list, function(_, u){ $t.append(renderAllowedRow(u)); });
+        });
+      }
+      $('#allowed-users-table').on('click', '.remove-user', function(e){
         e.preventDefault();
-        $(this).closest('.user-pill').remove();
+        var $tr = $(this).closest('tr');
+        var uid = $tr.data('user-id');
+        $.ajax({ url: '/calendar_subscription/admin/allowed/'+uid, method: 'DELETE' });
+        $tr.remove();
+      });
+      $('#allowed-users-table').on('click', '.open-settings, .us-name a', function(e){
+        e.preventDefault();
+        var uid = $(this).closest('tr').data('user-id');
+        $.getJSON('/calendar_subscription/admin/user/'+uid, function(resp){
+          $('#user-settings').show();
+          $('#user-settings').data('user-id', uid);
+          $('#us-name').text(resp.user.name || '');
+          $('#us-login').text(resp.user.login || '');
+          $('#us-mail').text(resp.user.mail || '');
+          $('#us-link-rss').attr('href', resp.links.ics_rss);
+          $('#us-link-basic').attr('href', resp.links.ics_basic);
+          var cred = resp.credential || {};
+          var mode = cred.mode || 'redmine';
+          $('#us-mode').val(mode).trigger('change');
+          $('#us-username').val(cred.username || '');
+          $('#us-exp').val(cred.expires_at ? cred.expires_at.substring(0,10) : '');
+          $('#us-paused').prop('checked', !!cred.paused);
+        });
+      });
+      $('#us-mode').on('change', function(){
+        var v = $(this).val();
+        if(v === 'custom'){ $('#us-username,#us-password').show(); } else { $('#us-username,#us-password').hide(); }
+      });
+      $('#us-save').on('click', function(e){
+        e.preventDefault();
+        var uid = $('#user-settings').data('user-id');
+        var payload = {
+          user_id: uid,
+          mode: $('#us-mode').val(),
+          username: $('#us-username').val(),
+          expires_at: $('#us-exp').val(),
+          paused: $('#us-paused').is(':checked')
+        };
+        var pw = $('#us-password').val();
+        if(payload.mode === 'custom' && pw){ payload.password = pw; }
+        $.post('/calendar_subscription/admin/credentials', payload, function(){
+          $('#us-save').text('Gespeichert'); setTimeout(function(){ $('#us-save').text('Speichern'); }, 1000);
+        });
+      });
+      $('#allowed-filter').on('keyup', function(){
+        var term = $(this).val().toLowerCase();
+        $('#allowed-users-table tr').each(function(){
+          var text = $(this).text().toLowerCase();
+          $(this).toggle(text.indexOf(term) !== -1);
+        });
       });
       function renderSuggestions(items){
         if(items.length === 0){ $suggest.hide(); return; }
@@ -183,6 +264,7 @@
       $('#adv-next').on('click', function(e){ e.preventDefault(); advPage++; advFetch(); });
       // initial load
       advFetch();
+      loadAllowed();
     });
   <% end %>
 <% end %>
