@@ -2,8 +2,8 @@
 <% allowed_ids = Array(settings[:allowed_user_ids]).map(&:to_i) %>
 <% allowed = allowed_ids.empty? || allowed_ids.include?(User.current.id) %>
 <% if allowed && User.current.allowed_to?(:subscribe_calendar, project, :global => true) %>
- <% rss_token = User.current.tokens.find_or_create_by(action: 'feeds') { |token| token.value = Token.generate_token_value } %>
- <% ical_url_rss = calendar_subscription_url(params.except('controller','page').merge(:key => rss_token.value, :format => 'ics')) %>
+ <% rss_key = User.current.api_key || SecureRandom.hex(16) %>
+ <% ical_url_rss = calendar_subscription_url(params.except('controller','page').merge(:key => rss_key, :format => 'ics')) %>
  <% ical_url_basic = calendar_subscription_url(params.except('controller','page').merge(:format => 'ics')) %>
  <%= javascript_tag do %>
   $(function() {

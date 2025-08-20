@@ -134,12 +134,10 @@ class CalendarSubscriptionAdminController < ApplicationController
     user = User.find(params[:user_id])
     cred = CalendarSubscriptionCredential.find_by(user_id: user.id)
     
-    # Get or create RSS token for the user
-    rss_token = user.tokens.find_or_create_by(action: 'feeds') do |token|
-      token.value = Token.generate_token_value
-    end
+    # Generate a simple token for RSS access (using user's API key or generate one)
+    rss_key = user.api_key || SecureRandom.hex(16)
     
-    ics_url_rss = url_for(controller: 'calendar_subscription', action: 'show', only_path: false, key: rss_token.value, format: 'ics')
+    ics_url_rss = url_for(controller: 'calendar_subscription', action: 'show', only_path: false, key: rss_key, format: 'ics')
     ics_url_basic = url_for(controller: 'calendar_subscription', action: 'show', only_path: false, format: 'ics')
     render json: {
       user: { id: user.id, name: user.name, login: user.login, mail: user.mail },

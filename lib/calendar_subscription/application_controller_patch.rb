@@ -10,8 +10,9 @@ module CalendarSubscription
       return result if result
       if params[:format] == 'ics' && request.get?
         if params[:key]
-          token = Token.find_by(value: params[:key], action: 'feeds')
-          return token&.user
+          # Try to find user by API key
+          user = User.find_by_api_key(params[:key])
+          return user if user
         end
         authenticated_user = nil
         authenticate_with_http_basic do |login, password|
