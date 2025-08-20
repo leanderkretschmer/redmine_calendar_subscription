@@ -2,6 +2,7 @@ class CalendarSubscriptionAdminController < ApplicationController
 
   layout 'admin'
   before_action :require_admin
+  before_action :find_current_user_for_api
 
   def index
   end
@@ -85,6 +86,19 @@ class CalendarSubscriptionAdminController < ApplicationController
       credential: cred ? { username: cred.username, use_redmine_credentials: cred.use_redmine_credentials } : nil,
       links: { ics_rss: ics_url_rss, ics_basic: ics_url_basic }
     }
+  end
+
+  private
+  # Allow JSON API calls from admin UI via session or authenticity token
+  def find_current_user_for_api
+    return if User.current&.admin?
+    # Try regular session
+    return if User.current.logged?
+    # Try API key in header (not required, but keep compatible)
+    if request.format.json? && (token = request.headers['X-Redmine-API-Key']).present?
+      user = User.find_by_api_key(token)
+      User.current = user if user
+    end
   end
 end
 
