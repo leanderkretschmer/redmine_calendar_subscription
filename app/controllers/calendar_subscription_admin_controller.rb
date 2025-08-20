@@ -27,7 +27,7 @@ class CalendarSubscriptionAdminController < ApplicationController
       when 'login'
         scope = scope.where('LOWER(login) LIKE ?', q)
       when 'mail'
-        scope = scope.where('LOWER(mail) LIKE ?', q)
+        scope = scope.joins(:email_addresses).where('LOWER(email_addresses.address) LIKE ?', q)
       when 'firstname'
         scope = scope.where('LOWER(firstname) LIKE ?', q)
       when 'lastname'
@@ -39,17 +39,18 @@ class CalendarSubscriptionAdminController < ApplicationController
 
     # Sorting
     order_sql = case by
-                when 'login' then 'login ASC'
-                when 'mail' then 'mail ASC'
-                when 'firstname' then 'firstname ASC, lastname ASC'
-                when 'lastname' then 'lastname ASC, firstname ASC'
-                else 'login ASC'
+                when 'login' then 'users.login ASC'
+                when 'mail' then 'email_addresses.address ASC'
+                when 'firstname' then 'users.firstname ASC, users.lastname ASC'
+                when 'lastname' then 'users.lastname ASC, users.firstname ASC'
+                else 'users.login ASC'
                 end
-    scope = scope.order(order_sql)
+    scope = (by == 'mail' ? scope.joins(:email_addresses) : scope).order(order_sql)
+    scope = scope.distinct
 
     total = scope.count
     total_pages = (total.to_f / per).ceil
-    users = scope.offset((page - 1) * per).limit(per).select(:id, :login, :firstname, :lastname, :mail)
+    users = scope.offset((page - 1) * per).limit(per).select(:id, :login, :firstname, :lastname)
 
     render json: {
       users: users.map { |u| { id: u.id, login: u.login, name: u.name, mail: u.mail } },
