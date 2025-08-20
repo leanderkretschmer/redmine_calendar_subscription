@@ -1,5 +1,5 @@
 <% # Renders in Administration -> Users -> New/Edit user form %>
-<% user = @user || @users && @users.first || User.current %>
+<% user = @user %>
 <div class="box tabular">
   <p>
     <label>Kalender-Abo</label>
@@ -8,8 +8,11 @@
     <% is_enabled = allowed.include?(user.id) %>
     <input type="checkbox" id="cs-sync" <%= 'checked' if is_enabled %> />
     <span class="info">Wenn aktiviert, wird dieser Nutzer in der Plugin-Config-Liste angezeigt und kann den Kalender über Redmine-Login abrufen.</span>
+    <% rss_key = user.respond_to?(:rss_key) ? user.rss_key : nil %>
     <span id="cs-links" style="margin-left:8px; <%= 'display:none;' unless is_enabled %>">
-      <%= link_to 'iCal (RSS-Key)', calendar_subscription_path(key: user.rss_key, format: 'ics'), target: '_blank' %> |
+      <% if rss_key.present? %>
+        <%= link_to 'iCal (RSS-Key)', calendar_subscription_path(key: rss_key, format: 'ics'), target: '_blank' %> |
+      <% end %>
       <%= link_to 'iCal (Login)', calendar_subscription_path(format: 'ics'), target: '_blank' %>
     </span>
   </p>
