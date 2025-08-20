@@ -21,6 +21,8 @@
 <% content_for :header_tags do %>
   <%= javascript_tag do %>
     $(function(){
+      var csrf = $('meta[name="csrf-token"]').attr('content');
+      if(csrf){ $.ajaxSetup({ headers: { 'X-CSRF-Token': csrf } }); }
       $('#cs-sync').on('change', function(){
         var enabled = $(this).is(':checked');
         var url = enabled ? '/calendar_subscription/admin/allowed' : '/calendar_subscription/admin/allowed/<%= user.id %>';
