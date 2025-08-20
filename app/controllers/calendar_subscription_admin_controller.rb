@@ -10,9 +10,53 @@ class CalendarSubscriptionAdminController < ApplicationController
 
   def users
     term = (params[:name].presence || params[:q].presence || params[:term].presence || '').to_s.strip
-    scope = User.active.order(:login)
-    scope = scope.where("LOWER(login) LIKE :q OR LOWER(firstname) LIKE :q OR LOWER(lastname) LIKE :q OR LOWER(mail) LIKE :q", q: "%#{term.downcase}%") if term.present?
-    render json: scope.limit(50).select(:id, :login, :firstname, :lastname, :mail).map { |u| { id: u.id, login: u.login, name: u.name, mail: u.mail } }
+    by   = (params[:by].presence || 'name').to_s
+    page = params[:page].to_i
+    per  = params[:per].to_i
+    page = 1 if page <= 0
+    per  = 8 if per <= 0 || per > 100
+
+    allowed_fields = %w[name login mail firstname lastname]
+    by = 'name' unless allowed_fields.include?(by)
+
+    scope = User.active
+    # Filtering
+    if term.present?
+      q = "%#{term.downcase}%"
+      case by
+      when 'login'
+        scope = scope.where('LOWER(login) LIKE ?', q)
+      when 'mail'
+        scope = scope.where('LOWER(mail) LIKE ?', q)
+      when 'firstname'
+        scope = scope.where('LOWER(firstname) LIKE ?', q)
+      when 'lastname'
+        scope = scope.where('LOWER(lastname) LIKE ?', q)
+      else
+        scope = scope.where('LOWER(login) LIKE :q OR LOWER(firstname) LIKE :q OR LOWER(lastname) LIKE :q OR LOWER(mail) LIKE :q', q: q)
+      end
+    end
+
+    # Sorting
+    order_sql = case by
+                when 'login' then 'login ASC'
+                when 'mail' then 'mail ASC'
+                when 'firstname' then 'firstname ASC, lastname ASC'
+                when 'lastname' then 'lastname ASC, firstname ASC'
+                else 'login ASC'
+                end
+    scope = scope.order(order_sql)
+
+    total = scope.count
+    total_pages = (total.to_f / per).ceil
+    users = scope.offset((page - 1) * per).limit(per).select(:id, :login, :firstname, :lastname, :mail)
+
+    render json: {
+      users: users.map { |u| { id: u.id, login: u.login, name: u.name, mail: u.mail } },
+      page: page,
+      total_pages: total_pages,
+      total: total
+    }
   end
 
   def credentials_index

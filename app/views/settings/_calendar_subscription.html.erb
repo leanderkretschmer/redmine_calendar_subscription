@@ -60,6 +60,11 @@
       </select>
     </div>
     <div id="adv-user-results" style="margin-top:8px; border:1px solid #eee; max-height:260px; overflow:auto; background:#fff;"></div>
+    <div id="adv-user-pager" style="margin-top:6px; display:flex; gap:8px; align-items:center;">
+      <button id="adv-prev" class="button">Zurück</button>
+      <span id="adv-page"></span>
+      <button id="adv-next" class="button">Weiter</button>
+    </div>
   </div>
 </p>
 
@@ -142,19 +147,24 @@
       // Advanced user add panel
       $('#open-add-user').on('click', function(e){ e.preventDefault(); $('#add-user-panel').toggle(); $('#adv-user-input').focus(); });
       var advTimer = null;
+      var advPage = 1;
       function advFetch(){
         var term = $.trim($('#adv-user-input').val());
         var field = $('#adv-user-field').val();
-        if(term.length < 2){ $('#adv-user-results').empty(); return; }
-        var q = term;
-        $.getJSON('/calendar_subscription/admin/users', { name: q }, function(items){
+        if(term.length < 1){
+          // Leerlauf: zeige erste Seite alphabetisch
+        }
+        $.getJSON('/calendar_subscription/admin/users', { name: term, by: field, page: advPage, per: 8 }, function(resp){
+          var list = resp.users || [];
           var $r = $('#adv-user-results').empty();
-          $.each(items, function(_, u){
+          $.each(list, function(_, u){
             var match = true;
-            if(field === 'login' && u.login.indexOf(term) === -1) match = false;
-            if(field === 'mail' && (u.mail||'').indexOf(term) === -1) match = false;
-            if(field === 'firstname' && u.name.split(' ')[0].toLowerCase().indexOf(term.toLowerCase()) === -1) match = false;
-            if(field === 'lastname' && u.name.split(' ').slice(-1)[0].toLowerCase().indexOf(term.toLowerCase()) === -1) match = false;
+            if(term.length >= 1){
+              if(field === 'login' && u.login.toLowerCase().indexOf(term.toLowerCase()) === -1) match = false;
+              if(field === 'mail' && (u.mail||'').toLowerCase().indexOf(term.toLowerCase()) === -1) match = false;
+              if(field === 'firstname' && u.name.toLowerCase().indexOf(term.toLowerCase()) === -1) match = false;
+              if(field === 'lastname' && u.name.toLowerCase().indexOf(term.toLowerCase()) === -1) match = false;
+            }
             if(!match) return;
             var row = $('<div style="padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer;"></div>');
             row.text(u.name + ' ('+u.login+') '+(u.mail||''));
@@ -163,9 +173,16 @@
             row.on('mouseleave', function(){ $(this).css('background','transparent'); });
             $r.append(row);
           });
+          $('#adv-page').text('Seite ' + resp.page + ' / ' + resp.total_pages);
+          $('#adv-prev').prop('disabled', resp.page <= 1);
+          $('#adv-next').prop('disabled', resp.page >= resp.total_pages);
         });
       }
-      $('#adv-user-input, #adv-user-field').on('keyup change', function(){ clearTimeout(advTimer); advTimer = setTimeout(advFetch, 200); });
+      $('#adv-user-input, #adv-user-field').on('keyup change', function(){ advPage = 1; clearTimeout(advTimer); advTimer = setTimeout(advFetch, 200); });
+      $('#adv-prev').on('click', function(e){ e.preventDefault(); if(advPage>1){ advPage--; advFetch(); }});
+      $('#adv-next').on('click', function(e){ e.preventDefault(); advPage++; advFetch(); });
+      // initial load
+      advFetch();
     });
   <% end %>
 <% end %>
