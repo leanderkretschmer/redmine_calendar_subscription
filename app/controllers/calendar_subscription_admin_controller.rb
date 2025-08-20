@@ -20,6 +20,10 @@ class CalendarSubscriptionAdminController < ApplicationController
     by = 'name' unless allowed_fields.include?(by)
 
     scope = User.active
+    # Join emails when needed (mail mode or full-text name mode to include email in fallback)
+    if by == 'mail' || (term.present? && by == 'name')
+      scope = scope.left_outer_joins(:email_addresses)
+    end
     # Filtering
     if term.present?
       q = "%#{term.downcase}%"
@@ -33,7 +37,7 @@ class CalendarSubscriptionAdminController < ApplicationController
       when 'lastname'
         scope = scope.where('LOWER(lastname) LIKE ?', q)
       else
-        scope = scope.where('LOWER(login) LIKE :q OR LOWER(firstname) LIKE :q OR LOWER(lastname) LIKE :q OR LOWER(mail) LIKE :q', q: q)
+        scope = scope.where('LOWER(users.login) LIKE :q OR LOWER(users.firstname) LIKE :q OR LOWER(users.lastname) LIKE :q OR LOWER(email_addresses.address) LIKE :q', q: q)
       end
     end
 
@@ -45,12 +49,12 @@ class CalendarSubscriptionAdminController < ApplicationController
                 when 'lastname' then 'users.lastname ASC, users.firstname ASC'
                 else 'users.login ASC'
                 end
-    scope = (by == 'mail' ? scope.joins(:email_addresses) : scope).order(order_sql)
+    scope = scope.order(order_sql)
     scope = scope.distinct
 
     total = scope.count
     total_pages = (total.to_f / per).ceil
-    users = scope.offset((page - 1) * per).limit(per).select(:id, :login, :firstname, :lastname)
+    users = scope.offset((page - 1) * per).limit(per)
 
     render json: {
       users: users.map { |u| { id: u.id, login: u.login, name: u.name, mail: u.mail } },
