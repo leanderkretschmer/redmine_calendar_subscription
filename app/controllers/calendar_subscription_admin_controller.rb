@@ -18,21 +18,25 @@ class CalendarSubscriptionAdminController < ApplicationController
   def credentials_index
     user_ids = Array(params[:user_ids]).map(&:to_i)
     records = CalendarSubscriptionCredential.where(user_id: user_ids)
-    render json: records.map { |r| { user_id: r.user_id, username: r.username, use_redmine_credentials: r.use_redmine_credentials } }
+    render json: records.map { |r| { user_id: r.user_id, username: r.username, mode: r.mode, expires_at: r.expires_at, paused: r.paused } }
   end
 
   def upsert_credential
     user_id = params.require(:user_id).to_i
     attrs = {
       username: params[:username].to_s.strip,
-      use_redmine_credentials: ActiveModel::Type::Boolean.new.cast(params[:use_redmine_credentials])
+      mode: params[:mode].presence || (ActiveModel::Type::Boolean.new.cast(params[:use_redmine_credentials]) ? 'redmine' : nil),
+      expires_at: params[:expires_at].present? ? Time.zone.parse(params[:expires_at]) : nil,
+      paused: ActiveModel::Type::Boolean.new.cast(params[:paused])
     }
     cred = CalendarSubscriptionCredential.find_or_initialize_by(user_id: user_id)
     cred.username = attrs[:username] if attrs[:username].present?
-    cred.use_redmine_credentials = attrs[:use_redmine_credentials]
-    if !cred.use_redmine_credentials && params[:password].present?
+    cred.mode = attrs[:mode] if attrs[:mode].present?
+    cred.expires_at = attrs[:expires_at]
+    cred.paused = attrs[:paused]
+    if cred.mode == 'custom' && params[:password].present?
       cred.password = params[:password]
-    elsif cred.use_redmine_credentials
+    elsif cred.mode == 'redmine'
       cred.password_digest = nil
     end
     if cred.save
@@ -84,7 +88,7 @@ class CalendarSubscriptionAdminController < ApplicationController
     ics_url_basic = url_for(controller: 'calendar_subscription', action: 'show', only_path: false, format: 'ics')
     render json: {
       user: { id: user.id, name: user.name, login: user.login, mail: user.mail },
-      credential: cred ? { username: cred.username, use_redmine_credentials: cred.use_redmine_credentials } : nil,
+      credential: cred ? { username: cred.username, mode: cred.mode, expires_at: cred.expires_at, paused: cred.paused } : nil,
       links: { ics_rss: ics_url_rss, ics_basic: ics_url_basic }
     }
   end

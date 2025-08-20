@@ -45,8 +45,21 @@
       <% end %>
     <% end %>
   </div>
-  <div style="margin-top:8px;">
-    <%= link_to 'Erweiterte Verwaltung (Liste, Zugangsdaten & .ics-Links)', '/calendar_subscription/admin', class: 'icon icon-settings' %>
+  <div style="margin-top:12px;">
+    <a href="#" id="open-add-user" class="icon icon-add" style="color:#268bd2;">Nutzer hinzufügen</a>
+  </div>
+  <div id="add-user-panel" style="margin-top:8px; display:none; max-width:720px; border:1px solid #ddd; padding:8px; background:#fafafa;">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input id="adv-user-input" type="text" style="flex:1;" placeholder="Nutzer suchen..." />
+      <select id="adv-user-field">
+        <option value="name">Anzeigename</option>
+        <option value="login">Benutzername</option>
+        <option value="mail">E-Mail</option>
+        <option value="firstname">Vorname</option>
+        <option value="lastname">Nachname</option>
+      </select>
+    </div>
+    <div id="adv-user-results" style="margin-top:8px; border:1px solid #eee; max-height:260px; overflow:auto; background:#fff;"></div>
   </div>
 </p>
 
@@ -57,11 +70,16 @@
       var $suggest = $('#user-suggest');
       function addUser(user){
         if($('#allowed-users-list input[value="'+user.id+'"]').length){ return; }
-        var pill = $('<div class="user-pill">'
+        var pill = $('<div class="user-pill" style="display:inline-flex; align-items:center; gap:6px; border:1px solid #ddd; border-radius:12px; padding:6px 10px; background:#f9f9f9;">'
           + '<input type="hidden" name="settings[allowed_user_ids][]" value="'+user.id+'" />'
           + '<span></span>'
-          + '<a href="#" class="edit-cred" data-user-id="'+user.id+'">⚙</a>'
-          + '<a href="#" class="remove-user" data-user-id="'+user.id+'">×</a>'
+          + '<select class="cred-mode" data-user-id="'+user.id+'" title="Authentifizierung"><option value="redmine">Redmine</option><option value="custom">Set Credentials</option><option value="none">None</option></select>'
+          + '<input type="text" class="cred-user" data-user-id="'+user.id+'" placeholder="Benutzername" style="width:120px; display:none;" />'
+          + '<input type="password" class="cred-pass" data-user-id="'+user.id+'" placeholder="Passwort" style="width:120px; display:none;" />'
+          + '<input type="date" class="cred-exp" data-user-id="'+user.id+'" title="Ablaufdatum" />'
+          + '<label style="margin:0 4px; font-size:12px;"><input type="checkbox" class="cred-paused" data-user-id="'+user.id+'" /> Pause</label>'
+          + '<a href="#" class="save-cred" data-user-id="'+user.id+'" title="Speichern">💾</a>'
+          + '<a href="#" class="remove-user" data-user-id="'+user.id+'" title="Entfernen">×</a>'
           + '</div>');
         pill.find('span').text(user.name + ' ('+ user.login +')');
         $('#allowed-users-list').append(pill);
@@ -100,25 +118,54 @@
         if(!$(e.target).closest('#user_picker, #user-suggest').length){ $suggest.hide(); }
       });
 
-      $('#allowed-users-list').on('click', '.edit-cred', function(e){
-        e.preventDefault();
-        var userId = $(this).data('user-id');
-        var username = prompt('<%= j l(:calender_subscription_settings_prompt_username) %>');
-        if(username === null){ return; }
-        var useRedmine = false;
-        if(username === ''){ useRedmine = true; }
-        var payload = { user_id: userId, username: username, use_redmine_credentials: useRedmine };
-        if(!useRedmine){
-          var password = prompt('<%= j l(:calender_subscription_settings_prompt_password) %>');
-          if(password === null){ return; }
-          payload.password = password;
-        }
-        $.ajax({ url: '/calendar_subscription/admin/credentials', method: 'POST', data: payload, success: function(){
-          alert('<%= j l(:calender_subscription_settings_saved) %>');
-        }, error: function(xhr){
-          alert('Error: ' + (xhr.responseJSON && xhr.responseJSON.errors ? xhr.responseJSON.errors.join(', ') : xhr.statusText));
-        }});
+      $('#allowed-users-list').on('change', '.cred-mode', function(){
+        var v = $(this).val();
+        var $p = $(this).closest('.user-pill');
+        if(v === 'custom'){ $p.find('.cred-user,.cred-pass').show(); } else { $p.find('.cred-user,.cred-pass').hide(); }
       });
+      $('#allowed-users-list').on('click', '.save-cred', function(e){
+        e.preventDefault();
+        var $p = $(this).closest('.user-pill');
+        var userId = $(this).data('user-id');
+        var mode = $p.find('.cred-mode').val();
+        var username = $p.find('.cred-user').val();
+        var password = $p.find('.cred-pass').val();
+        var exp = $p.find('.cred-exp').val();
+        var paused = $p.find('.cred-paused').is(':checked');
+        var payload = { user_id: userId, mode: mode, username: username, expires_at: exp, paused: paused };
+        if(mode === 'custom' && password){ payload.password = password; }
+        $.ajax({ url: '/calendar_subscription/admin/credentials', method: 'POST', data: payload, success: function(){
+          $(e.currentTarget).text('✔'); setTimeout(function(){ $(e.currentTarget).text('💾'); }, 800);
+        }, error: function(xhr){ alert('Error: ' + (xhr.responseJSON && xhr.responseJSON.errors ? xhr.responseJSON.errors.join(', ') : xhr.statusText)); }});
+      });
+
+      // Advanced user add panel
+      $('#open-add-user').on('click', function(e){ e.preventDefault(); $('#add-user-panel').toggle(); $('#adv-user-input').focus(); });
+      var advTimer = null;
+      function advFetch(){
+        var term = $.trim($('#adv-user-input').val());
+        var field = $('#adv-user-field').val();
+        if(term.length < 2){ $('#adv-user-results').empty(); return; }
+        var q = term;
+        $.getJSON('/calendar_subscription/admin/users', { name: q }, function(items){
+          var $r = $('#adv-user-results').empty();
+          $.each(items, function(_, u){
+            var match = true;
+            if(field === 'login' && u.login.indexOf(term) === -1) match = false;
+            if(field === 'mail' && (u.mail||'').indexOf(term) === -1) match = false;
+            if(field === 'firstname' && u.name.split(' ')[0].toLowerCase().indexOf(term.toLowerCase()) === -1) match = false;
+            if(field === 'lastname' && u.name.split(' ').slice(-1)[0].toLowerCase().indexOf(term.toLowerCase()) === -1) match = false;
+            if(!match) return;
+            var row = $('<div style="padding:6px 8px; border-bottom:1px solid #eee; cursor:pointer;"></div>');
+            row.text(u.name + ' ('+u.login+') '+(u.mail||''));
+            row.on('click', function(){ addUser(u); });
+            row.on('mouseenter', function(){ $(this).css('background','#f0f0f0'); });
+            row.on('mouseleave', function(){ $(this).css('background','transparent'); });
+            $r.append(row);
+          });
+        });
+      }
+      $('#adv-user-input, #adv-user-field').on('keyup change', function(){ clearTimeout(advTimer); advTimer = setTimeout(advFetch, 200); });
     });
   <% end %>
 <% end %>
