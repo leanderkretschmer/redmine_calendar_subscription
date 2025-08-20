@@ -10,7 +10,8 @@ module CalendarSubscription
       return result if result
       if params[:format] == 'ics' && request.get?
         if params[:key]
-          return User.find_by_rss_key(params[:key])
+          token = Token.find_by(value: params[:key], action: 'feeds')
+          return token&.user
         end
         authenticated_user = nil
         authenticate_with_http_basic do |login, password|
