@@ -1,6 +1,7 @@
 class CalendarSubscriptionAdminController < ApplicationController
 
   layout 'admin'
+  prepend_before_action :force_html_format
   before_action :require_admin
   before_action :find_current_user_for_api
 
@@ -98,6 +99,13 @@ class CalendarSubscriptionAdminController < ApplicationController
     if request.format.json? && (token = request.headers['X-Redmine-API-Key']).present?
       user = User.find_by_api_key(token)
       User.current = user if user
+    end
+  end
+
+  def force_html_format
+    # Force HTML format for XHR so Redmine does not treat it as API (which would require API key)
+    if request.xhr? && (request.format.json? || request.format.js?)
+      request.format = :html
     end
   end
 end

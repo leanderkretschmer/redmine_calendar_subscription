@@ -28,7 +28,7 @@
         var url = enabled ? '/calendar_subscription/admin/allowed' : '/calendar_subscription/admin/allowed/<%= user.id %>';
         var method = enabled ? 'POST' : 'DELETE';
         var data = enabled ? { user_id: <%= user.id %> } : {};
-        $.ajax({ url: url, method: method, data: data, success: function(){
+        $.ajax({ url: url, method: method, data: data, headers: { 'Accept': 'text/html,*/*;q=0.9' }, success: function(){
           if(enabled){ $('#cs-links').show(); } else { $('#cs-links').hide(); }
         }, error: function(){ alert('Fehler beim Aktualisieren'); } });
       });
