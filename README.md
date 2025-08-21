@@ -1,3 +1,5 @@
+# Currently not functional 
+
 # Redmine Calendar Subscription Plugin (Redmine 6)
 
 'Calendar Subscription' is a Redmine plugin that helps you keep an overview over planned issues.
